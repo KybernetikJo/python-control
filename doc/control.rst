@@ -94,6 +94,8 @@ Control system analysis
     pzmap
     root_locus
     sisotool
+    h2norm
+    linfnorm
     StateSpace.__call__
     TransferFunction.__call__
 

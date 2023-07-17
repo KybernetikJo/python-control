@@ -70,12 +70,12 @@ from . import config
 from copy import deepcopy
 
 try:
-    from slycot import ab13dd
+    from slycot import ab13dd, ab13bd
 except ImportError:
     ab13dd = None
 
 __all__ = ['StateSpace', 'LinearICSystem', 'ss2io', 'tf2io', 'tf2ss', 'ssdata',
-           'linfnorm', 'ss', 'rss', 'drss', 'summing_junction']
+           'linfnorm', 'h2norm', 'ss', 'rss', 'drss', 'summing_junction']
 
 # Define module default parameter values
 _statesp_defaults = {
@@ -1820,6 +1820,54 @@ def ssdata(sys):
     """
     ss = _convert_to_statespace(sys)
     return ss.A, ss.B, ss.C, ss.D
+
+def h2norm(sys, tol=1e-10):
+    """H-2 norm of a linear system
+
+    Parameters
+    ----------
+    sys : LTI (StateSpace or TransferFunction)
+      system to evalute H-2 norm of
+    tol : real scalar
+      tolerance on norm estimate
+
+    Returns
+    -------
+    h2norm : non-negative scalar
+      H-2 norm
+
+    For stable systems, the L-2 and H-2 norms are equal;
+    for unstable systems, the H-2 norm is infinite, while the
+    L-2 norm is finite if the system has no poles on the
+    imaginary axis.
+
+    See also
+    --------
+    slycot.ab13bd : the Slycot routine h2norm that does the calculation
+    """
+
+    if ab13bd is None:
+        raise ControlSlycot("Can't find slycot module 'ab13bd'")
+
+    a, b, c, d = ssdata(_convert_to_statespace(sys))
+    e = np.eye(a.shape[0])
+
+    n = a.shape[0]
+    m = b.shape[1]
+    p = c.shape[0]
+
+    if n == 0:
+        # ab13dd doesn't accept empty A, B, C, D;
+        # static gain case is easy enough to compute
+        h2norm = None
+        return h2norm
+
+    dico = 'C' if sys.isctime() else 'D'
+    jobn = 'H'
+
+    h2norm = ab13bd(dico, jobn, n, m, p, A, B, C, D)
+
+    return h2norm
 
 
 def linfnorm(sys, tol=1e-10):
